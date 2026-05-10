@@ -252,11 +252,11 @@
     // 2. OVERLAP I RYSUNEK TECHNICZNY
     // ==========================================
     const overlapData = {
-        "biax600":  { long: 30, trans: 30, name: "Biax 600", color: "#28a745" }, // Zielony
-        "biax936":  { long: 45, trans: 45, name: "Biax 936", color: "#20c997" }, // Jasno zielony
-        "biax1200": { long: 60, trans: 60, name: "Biax 1200", color: "#198754" },// Ciemno zielony
-        "ud":       { long: 60, trans: 12, name: "UD 600", color: "#007BFF" },   // Niebieski
-        "triax":    { long: 90, trans: 30, name: "Triax 1200", color: "#6f42c1" }// Fioletowy
+        "biax600":  { long: 30, trans: 30, name: "Biax 600", color: "#28a745" }, 
+        "biax936":  { long: 45, trans: 45, name: "Biax 936", color: "#20c997" }, 
+        "biax1200": { long: 60, trans: 60, name: "Biax 1200", color: "#198754" },
+        "ud":       { long: 60, trans: 12, name: "UD 600", color: "#007BFF" },   
+        "triax":    { long: 90, trans: 30, name: "Triax 1200", color: "#6f42c1" }
     };
 
     function addLayerRow() {
@@ -289,7 +289,7 @@
         
         let currentLong = dmgLong;
         let currentTrans = dmgTrans;
-        let layerResults = []; // Tablica do przechowania danych dla rysunku
+        let layerResults = []; 
 
         document.querySelectorAll('.layer-row').forEach((row, index) => {
             const selectVal = row.querySelector('.overlap-type').value;
@@ -301,10 +301,8 @@
             let dispLong = parseFloat(currentLong.toFixed(1));
             let dispTrans = parseFloat(currentTrans.toFixed(1));
 
-            // Zapis danych do narysowania
             layerResults.push({ id: index + 1, name: matInfo.name, long: dispLong, trans: dispTrans, color: matInfo.color });
 
-            // Generowanie listy HTML
             const resultDiv = document.createElement('div'); resultDiv.className = 'ply-result';
             resultDiv.innerHTML = `<span>Warstwa ${index + 1} (${matInfo.name})</span><span><b>${dispLong}</b> x <b>${dispTrans}</b> mm</span>`;
             outputContainer.appendChild(resultDiv);
@@ -320,20 +318,19 @@
         document.getElementById('drawing-container').style.display = 'block';
         const wrapper = document.getElementById('svg-wrapper');
 
-        // Ustalenie wielkości "płótna" na podstawie największej maty + margines
         const maxLayer = layers[layers.length - 1];
-        const padding = 120; // margines na napisy w SVG
+        const padding = 120; // margines na napisy w SVG (wystarczający na obrócone numery)
         const viewBoxW = maxLayer.long + (padding * 2);
         const viewBoxH = maxLayer.trans + (padding * 2);
         const cx = viewBoxW / 2;
         const cy = viewBoxH / 2;
 
-        // Dynamiczna wielkość fontu zalezna od wielkości całej naprawy (zeby nie był za maly przy duzych łatach)
-        const fSize = Math.max(viewBoxW * 0.02, 12); 
+        const fSize = Math.max(viewBoxW * 0.02, 10); 
+        const dimFSize = fSize * 0.75; // Czcionka wymiarów trochę mniejsza, żeby się mieściła
 
         let svg = `<svg viewBox="0 0 ${viewBoxW} ${viewBoxH}" style="width: 100%; height: auto; background: #fafafa; border: 1px dashed #ccc;">`;
 
-        // Osie kierunkowe (Longitudinal / Transverse)
+        // Osie kierunkowe
         svg += `
             <line x1="${cx}" y1="0" x2="${cx}" y2="${viewBoxH}" stroke="#ddd" stroke-width="2" stroke-dasharray="10,10"/>
             <line x1="0" y1="${cy}" x2="${viewBoxW}" y2="${cy}" stroke="#ddd" stroke-width="2" stroke-dasharray="10,10"/>
@@ -341,11 +338,11 @@
             <text x="${viewBoxW - padding + 10}" y="${cy - 10}" font-family="sans-serif" font-size="${fSize}" fill="#999">Longitudinal (0°)</text>
         `;
 
-        // 1. Rysowanie czerwonego prostokąta Uszkodzenia
+        // Czerwony prostokąt - Uszkodzenie
         svg += `<rect x="${cx - dmgLong/2}" y="${cy - dmgTrans/2}" width="${dmgLong}" height="${dmgTrans}" fill="rgba(220, 53, 69, 0.2)" stroke="#dc3545" stroke-width="2" stroke-dasharray="5,5"/>`;
-        svg += `<text x="${cx}" y="${cy}" font-family="sans-serif" font-size="${fSize*0.8}" fill="#dc3545" text-anchor="middle" dominant-baseline="middle" font-weight="bold">USZKODZENIE (${dmgLong}x${dmgTrans})</text>`;
+        svg += `<text x="${cx}" y="${cy}" font-family="sans-serif" font-size="${dimFSize}" fill="#dc3545" text-anchor="middle" dominant-baseline="middle" font-weight="bold">USZKODZENIE (${dmgLong}x${dmgTrans})</text>`;
 
-        // 2. Rysowanie poszczególnych mat (od najmniejszej do największej)
+        // Rysowanie poszczególnych mat
         layers.forEach((layer) => {
             let x = cx - (layer.long / 2);
             let y = cy - (layer.trans / 2);
@@ -353,10 +350,26 @@
             // Sam prostokąt maty
             svg += `<rect x="${x}" y="${y}" width="${layer.long}" height="${layer.trans}" fill="none" stroke="${layer.color}" stroke-width="${Math.max(viewBoxW*0.003, 2)}"/>`;
             
-            // Etykieta maty przypięta do jej lewego górnego rogu (Lekko nad linią i w prawo)
+            // Etykieta maty (Lewy Górny Róg) - z samej nazwy maty bez wymiarów
             svg += `
                 <text x="${x + (viewBoxW*0.01)}" y="${y - (viewBoxH*0.01)}" font-family="sans-serif" font-size="${fSize*0.8}" fill="${layer.color}" font-weight="bold">
-                    ${layer.id}. ${layer.name} [${layer.long} x ${layer.trans}]
+                    ${layer.id}. ${layer.name}
+                </text>
+            `;
+
+            // Wymiar Poziomy (Longitudinal) - pod dolną kreską
+            let bottomY = cy + (layer.trans / 2) + (dimFSize * 1.2);
+            svg += `
+                <text x="${cx}" y="${bottomY}" font-family="sans-serif" font-size="${dimFSize}" fill="${layer.color}" text-anchor="middle" font-weight="bold">
+                    ${layer.long}
+                </text>
+            `;
+
+            // Wymiar Pionowy (Transverse) - obok prawej kreski (Obrócony o 90 stopni)
+            let rightX = cx + (layer.long / 2) + (dimFSize * 0.8);
+            svg += `
+                <text x="${rightX}" y="${cy}" transform="rotate(-90 ${rightX} ${cy})" font-family="sans-serif" font-size="${dimFSize}" fill="${layer.color}" text-anchor="middle" dominant-baseline="middle" font-weight="bold">
+                    ${layer.trans}
                 </text>
             `;
         });
