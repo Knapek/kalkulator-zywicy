@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulator Żywicy - Multi-Maty</title>
+    <style>
+        :root {
+            --primary-color: #007BFF;
+            --danger-color: #dc3545;
+            --success-color: #28a745;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-color: #333;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+        .calculator {
+            background-color: var(--card-bg);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 600px;
+        }
+        h2 {
+            text-align: center;
+            margin-top: 0;
+            color: var(--primary-color);
+        }
+        
+        /* Tabela / Wiersze z matami */
+        .headers {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1.5fr 40px;
+            gap: 10px;
+            font-weight: bold;
+            font-size: 0.85em;
+            margin-bottom: 5px;
+            color: #555;
+            text-align: center;
+        }
+        .mat-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1.5fr 40px;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 0.95em;
+        }
+        .remove-btn {
+            background-color: var(--danger-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            height: 35px;
+            font-weight: bold;
+        }
+        .add-btn {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-size: 0.9em;
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+        
+        /* Konfiguracja ogólna */
+        .form-group {
+            margin-bottom: 15px;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        /* Przycisk Główny */
+        .calc-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--success-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background-color 0.3s;
+        }
+        .calc-btn:hover { background-color: #218838; }
+
+        /* Wyniki */
+        .results {
+            margin-top: 25px;
+            padding: 15px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            border-left: 5px solid var(--primary-color);
+        }
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 1.05em;
+        }
+        .result-item.bold {
+            font-weight: bold;
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="calculator">
+    <h2>Kalkulator Żywicy</h2>
+    
+    <div class="headers">
+        <div>Szer. (mm)</div>
+        <div>Dług. (mm)</div>
+        <div>Rodzaj maty</div>
+        <div></div>
+    </div>
+
+    <div id="mats-container">
+        <!-- Tutaj generują się wiersze z matami -->
+    </div>
+
+    <button class="add-btn" onclick="addMatRow()">+ Dodaj kolejną matę</button>
+
+    <div class="form-group">
+        <label>Margines na straty (np. pędzel, kubek) [%]</label>
+        <input type="number" id="waste" value="10" min="0">
+    </div>
+
+    <button class="calc-btn" onclick="calculate()">Oblicz</button>
+
+    <div class="results" id="results" style="display: none;">
+        <div class="result-item">
+            <span>Całkowita waga szkła:</span>
+            <span id="res-glass">0 g</span>
+        </div>
+        <div class="result-item">
+            <span>Mieszanka (z doliczonymi stratami):</span>
+            <span id="res-mix">0 g</span>
+        </div>
+        <div class="result-item bold">
+            <span>Żywica (Baza):</span>
+            <span id="res-epoxy" style="color: #007BFF;">0 g</span>
+        </div>
+        <div class="result-item bold" style="border-top: none; padding-top: 0; margin-top: 0;">
+            <span>Utwardzacz:</span>
+            <span id="res-hardener" style="color: #dc3545;">0 g</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Inicjalizacja pierwszego wiersza po załadowaniu strony
+    window.onload = function() {
+        addMatRow();
+    };
+
+    function addMatRow() {
+        const container = document.getElementById('mats-container');
+        const row = document.createElement('div');
+        row.className = 'mat-row';
+        
+        row.innerHTML = `
+            <input type="number" class="mat-width" placeholder="Np. 200" min="1">
+            <input type="number" class="mat-length" placeholder="Np. 400" min="1">
+            <select class="mat-type" onchange="checkCustom(this)">
+                <option value="600">Biax 600</option>
+                <option value="1200" selected>Biax 1200</option>
+                <option value="1200">Triax 1200</option>
+                <option value="1200">UD 1200</option>
+                <option value="custom">Inna gramatura...</option>
+            </select>
+            <button class="remove-btn" onclick="removeMatRow(this)" title="Usuń wiersz">X</button>
+        `;
+        container.appendChild(row);
+    }
+
+    function removeMatRow(btn) {
+        const container = document.getElementById('mats-container');
+        // Nie pozwalamy usunąć ostatniego pozostałego wiersza
+        if(container.children.length > 1) {
+            btn.parentElement.remove();
+        } else {
+            alert("Musisz mieć przynajmniej jedną matę w wyliczeniu.");
+        }
+    }
+
+    // Funkcja pozwalająca na wpisanie własnej gramatury, jeśli nie ma jej na liście
+    function checkCustom(select) {
+        if(select.value === 'custom') {
+            const customValue = prompt("Wpisz gramaturę maty (np. 300, 800):");
+            if(customValue && !isNaN(customValue)) {
+                // Dodaje nową opcję i ją wybiera
+                const newOption = document.createElement('option');
+                newOption.value = customValue;
+                newOption.text = `Własna (${customValue} g/m²)`;
+                select.add(newOption);
+                select.value = customValue;
+            } else {
+                select.value = "1200"; // powrót do domyślnego w razie błędu
+            }
+        }
+    }
+
+    function calculate() {
+        const rows = document.querySelectorAll('.mat-row');
+        let totalGlassWeight = 0;
+        let isValid = true;
+
+        // Pętla sumująca wagę wszystkich mat
+        rows.forEach(row => {
+            const width = parseFloat(row.querySelector('.mat-width').value);
+            const length = parseFloat(row.querySelector('.mat-length').value);
+            const grammage = parseFloat(row.querySelector('.mat-type').value);
+
+            if(width > 0 && length > 0 && grammage > 0) {
+                // Wzór: (Szer. mm / 1000) * (Dług. mm / 1000) * Gramatura m2
+                const areaM2 = (width / 1000) * (length / 1000);
+                totalGlassWeight += (areaM2 * grammage);
+            } else {
+                isValid = false;
+            }
+        });
+
+        if(!isValid || totalGlassWeight === 0) {
+            alert("Proszę wypełnić prawidłowo szerokość i długość we wszystkich wierszach.");
+            return;
+        }
+
+        const wastePercent = parseFloat(document.getElementById('waste').value) || 0;
+
+        // Obliczenie wagi potrzebnej mieszanki (Ratio 55 szkło : 45 żywica)
+        let mixWeight = totalGlassWeight * (45 / 55);
+
+        // Dodanie marginesu strat na narzędzia
+        if(wastePercent > 0) {
+            mixWeight = mixWeight * (1 + (wastePercent / 100));
+        }
+
+        // Podział na bazę i utwardzacz (Ratio żywicy do utwardzacza 100 : 26)
+        // Razem mieszanka składa się ze 126 "części"
+        const epoxyWeight = mixWeight * (100 / 126);
+        const hardenerWeight = mixWeight * (26 / 126);
+
+        // Wyświetlanie wyników zaokrąglonych do jednego miejsca po przecinku
+        document.getElementById('res-glass').innerText = totalGlassWeight.toFixed(1) + ' g';
+        document.getElementById('res-mix').innerText = mixWeight.toFixed(1) + ' g';
+        document.getElementById('res-epoxy').innerText = epoxyWeight.toFixed(1) + ' g';
+        document.getElementById('res-hardener').innerText = hardenerWeight.toFixed(1) + ' g';
+
+        // Odkrycie wyników
+        document.getElementById('results').style.display = 'block';
+    }
+</script>
+
+</body>
+</html>
