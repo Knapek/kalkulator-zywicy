@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalkulator Żywicy - Multi-Maty</title>
+    <title>Kalkulatory Kompozytowe</title>
     <style>
         :root {
             --primary-color: #007BFF;
+            --secondary-color: #17a2b8;
             --danger-color: #dc3545;
             --success-color: #28a745;
             --bg-color: #f4f7f6;
@@ -18,8 +19,10 @@
             background-color: var(--bg-color);
             color: var(--text-color);
             display: flex;
-            justify-content: center;
+            flex-direction: column;
+            align-items: center;
             padding: 20px;
+            gap: 30px;
         }
         .calculator {
             background-color: var(--card-bg);
@@ -33,12 +36,14 @@
             text-align: center;
             margin-top: 0;
             color: var(--primary-color);
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
         }
+        .calc-header-2 { color: var(--secondary-color); }
         
-        /* Tabela / Wiersze z matami */
-        .headers {
+        /* Tabela / Wiersze */
+        .headers, .headers-overlap {
             display: grid;
-            grid-template-columns: 1fr 1fr 1.5fr 40px;
             gap: 10px;
             font-weight: bold;
             font-size: 0.85em;
@@ -46,13 +51,20 @@
             color: #555;
             text-align: center;
         }
-        .mat-row {
+        .headers { grid-template-columns: 1fr 1fr 1.5fr 40px; }
+        .headers-overlap { grid-template-columns: 60px 1fr 40px; text-align: left; }
+        
+        .mat-row, .layer-row {
             display: grid;
-            grid-template-columns: 1fr 1fr 1.5fr 40px;
             gap: 10px;
             margin-bottom: 10px;
             align-items: center;
         }
+        .mat-row { grid-template-columns: 1fr 1fr 1.5fr 40px; }
+        .layer-row { grid-template-columns: 60px 1fr 40px; }
+        
+        .layer-num { font-weight: bold; text-align: center; color: #555; }
+
         input, select {
             width: 100%;
             padding: 8px;
@@ -85,17 +97,26 @@
         /* Konfiguracja ogólna */
         .form-group {
             margin-bottom: 15px;
-            border-top: 1px solid #eee;
             padding-top: 15px;
+        }
+        .damage-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid var(--secondary-color);
         }
         label {
             display: block;
             margin-bottom: 5px;
             font-weight: bold;
-            font-size: 0.9em;
+            font-size: 0.85em;
         }
         
-        /* Przycisk Główny */
+        /* Przyciski Główne */
         .calc-btn {
             width: 100%;
             padding: 12px;
@@ -109,7 +130,8 @@
             margin-top: 10px;
             transition: background-color 0.3s;
         }
-        .calc-btn:hover { background-color: #218838; }
+        .calc-btn.btn-overlap { background-color: var(--secondary-color); }
+        .calc-btn:hover { filter: brightness(0.9); }
 
         /* Wyniki */
         .results {
@@ -119,6 +141,8 @@
             border-radius: 5px;
             border-left: 5px solid var(--primary-color);
         }
+        .results-overlap { border-left-color: var(--secondary-color); }
+        
         .result-item {
             display: flex;
             justify-content: space-between;
@@ -131,10 +155,23 @@
             padding-top: 10px;
             margin-top: 10px;
         }
+        
+        /* Lista warstw w wynikach */
+        .ply-result {
+            background: #fff;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+        }
+        .ply-result span:first-child { font-weight: bold; color: var(--secondary-color); }
     </style>
 </head>
 <body>
 
+<!-- KALKULATOR 1: ŻYWICA -->
 <div class="calculator">
     <h2>Kalkulator Żywicy</h2>
     
@@ -145,20 +182,17 @@
         <div></div>
     </div>
 
-    <div id="mats-container">
-        <!-- Tutaj generują się wiersze z matami -->
-    </div>
+    <div id="mats-container"></div>
+    <button class="add-btn" onclick="addMatRow()">+ Dodaj matę do kubka</button>
 
-    <button class="add-btn" onclick="addMatRow()">+ Dodaj kolejną matę</button>
-
-    <div class="form-group">
-        <label>Margines na straty (np. pędzel, kubek) [%]</label>
+    <div class="form-group" style="border-top: 1px solid #eee;">
+        <label>Margines na straty (narzędzia) [%]</label>
         <input type="number" id="waste" value="10" min="0">
     </div>
 
-    <button class="calc-btn" onclick="calculate()">Oblicz</button>
+    <button class="calc-btn" onclick="calculateResin()">Oblicz Żywicę</button>
 
-    <div class="results" id="results" style="display: none;">
+    <div class="results" id="results-resin" style="display: none;">
         <div class="result-item">
             <span>Całkowita waga szkła:</span>
             <span id="res-glass">0 g</span>
@@ -169,34 +203,74 @@
         </div>
         <div class="result-item bold">
             <span>Żywica (Baza):</span>
-            <span id="res-epoxy" style="color: #007BFF;">0 g</span>
+            <span id="res-epoxy" style="color: var(--primary-color);">0 g</span>
         </div>
         <div class="result-item bold" style="border-top: none; padding-top: 0; margin-top: 0;">
             <span>Utwardzacz:</span>
-            <span id="res-hardener" style="color: #dc3545;">0 g</span>
+            <span id="res-hardener" style="color: var(--danger-color);">0 g</span>
+        </div>
+    </div>
+</div>
+
+<!-- KALKULATOR 2: OVERLAP / WYMIARY MAT -->
+<div class="calculator">
+    <h2 class="calc-header-2">Kalkulator Wymiarów Mat (Naprawa)</h2>
+    
+    <div class="damage-inputs">
+        <div>
+            <label title="Kierunek 0 maty UD">Uszkodzenie Longitudinal (mm)</label>
+            <input type="number" id="dmg-long" placeholder="np. 40" min="1">
+        </div>
+        <div>
+            <label>Uszkodzenie Transverse (mm)</label>
+            <input type="number" id="dmg-trans" placeholder="np. 50" min="1">
+        </div>
+    </div>
+
+    <div class="headers-overlap">
+        <div>Nr</div>
+        <div>Rodzaj Maty</div>
+        <div></div>
+    </div>
+
+    <div id="layers-container"></div>
+    <button class="add-btn" onclick="addLayerRow()">+ Dodaj kolejną warstwę na stos</button>
+
+    <button class="calc-btn btn-overlap" onclick="calculateOverlaps()">Oblicz Wymiary do Cięcia</button>
+
+    <div class="results results-overlap" id="results-overlap" style="display: none;">
+        <div style="font-size: 0.9em; margin-bottom: 15px; color: #555;">
+            * Wymiary zawierają dodatek na overlap z <b>obu</b> stron uszkodzenia (+ overlap x2).
+        </div>
+        <div id="overlap-output-list">
+            <!-- Tutaj pojawią się wyniki poszczególnych warstw -->
         </div>
     </div>
 </div>
 
 <script>
-    // Inicjalizacja pierwszego wiersza po załadowaniu strony
+    // --- INICJALIZACJA ---
     window.onload = function() {
-        addMatRow();
+        addMatRow();   // 1 wiersz do żywicy
+        addLayerRow(); // 1 wiersz do naprawy
     };
 
+    // ==========================================
+    // SKRYPTY KALKULATORA 1 (ŻYWICA)
+    // ==========================================
     function addMatRow() {
         const container = document.getElementById('mats-container');
         const row = document.createElement('div');
         row.className = 'mat-row';
-        
         row.innerHTML = `
             <input type="number" class="mat-width" placeholder="Np. 200" min="1">
             <input type="number" class="mat-length" placeholder="Np. 400" min="1">
             <select class="mat-type" onchange="checkCustom(this)">
                 <option value="600">Biax 600</option>
+                <option value="936">Biax 936</option>
                 <option value="1200" selected>Biax 1200</option>
+                <option value="600">UD 600</option>
                 <option value="1200">Triax 1200</option>
-                <option value="1200">UD 1200</option>
                 <option value="custom">Inna gramatura...</option>
             </select>
             <button class="remove-btn" onclick="removeMatRow(this)" title="Usuń wiersz">X</button>
@@ -206,79 +280,147 @@
 
     function removeMatRow(btn) {
         const container = document.getElementById('mats-container');
-        // Nie pozwalamy usunąć ostatniego pozostałego wiersza
-        if(container.children.length > 1) {
-            btn.parentElement.remove();
-        } else {
-            alert("Musisz mieć przynajmniej jedną matę w wyliczeniu.");
-        }
+        if(container.children.length > 1) btn.parentElement.remove();
+        else alert("Musisz mieć przynajmniej jedną matę w wyliczeniu.");
     }
 
-    // Funkcja pozwalająca na wpisanie własnej gramatury, jeśli nie ma jej na liście
     function checkCustom(select) {
         if(select.value === 'custom') {
             const customValue = prompt("Wpisz gramaturę maty (np. 300, 800):");
             if(customValue && !isNaN(customValue)) {
-                // Dodaje nową opcję i ją wybiera
                 const newOption = document.createElement('option');
                 newOption.value = customValue;
                 newOption.text = `Własna (${customValue} g/m²)`;
                 select.add(newOption);
                 select.value = customValue;
-            } else {
-                select.value = "1200"; // powrót do domyślnego w razie błędu
-            }
+            } else { select.value = "1200"; }
         }
     }
 
-    function calculate() {
+    function calculateResin() {
         const rows = document.querySelectorAll('.mat-row');
         let totalGlassWeight = 0;
         let isValid = true;
 
-        // Pętla sumująca wagę wszystkich mat
         rows.forEach(row => {
             const width = parseFloat(row.querySelector('.mat-width').value);
             const length = parseFloat(row.querySelector('.mat-length').value);
             const grammage = parseFloat(row.querySelector('.mat-type').value);
 
             if(width > 0 && length > 0 && grammage > 0) {
-                // Wzór: (Szer. mm / 1000) * (Dług. mm / 1000) * Gramatura m2
-                const areaM2 = (width / 1000) * (length / 1000);
-                totalGlassWeight += (areaM2 * grammage);
-            } else {
-                isValid = false;
-            }
+                totalGlassWeight += ((width / 1000) * (length / 1000) * grammage);
+            } else { isValid = false; }
         });
 
         if(!isValid || totalGlassWeight === 0) {
-            alert("Proszę wypełnić prawidłowo szerokość i długość we wszystkich wierszach.");
+            alert("Proszę wypełnić prawidłowo szerokość i długość we wszystkich wierszach (Kalkulator Żywicy).");
             return;
         }
 
         const wastePercent = parseFloat(document.getElementById('waste').value) || 0;
-
-        // Obliczenie wagi potrzebnej mieszanki (Ratio 55 szkło : 45 żywica)
         let mixWeight = totalGlassWeight * (45 / 55);
+        if(wastePercent > 0) mixWeight = mixWeight * (1 + (wastePercent / 100));
 
-        // Dodanie marginesu strat na narzędzia
-        if(wastePercent > 0) {
-            mixWeight = mixWeight * (1 + (wastePercent / 100));
-        }
-
-        // Podział na bazę i utwardzacz (Ratio żywicy do utwardzacza 100 : 26)
-        // Razem mieszanka składa się ze 126 "części"
         const epoxyWeight = mixWeight * (100 / 126);
         const hardenerWeight = mixWeight * (26 / 126);
 
-        // Wyświetlanie wyników zaokrąglonych do jednego miejsca po przecinku
         document.getElementById('res-glass').innerText = totalGlassWeight.toFixed(1) + ' g';
         document.getElementById('res-mix').innerText = mixWeight.toFixed(1) + ' g';
         document.getElementById('res-epoxy').innerText = epoxyWeight.toFixed(1) + ' g';
         document.getElementById('res-hardener').innerText = hardenerWeight.toFixed(1) + ' g';
+        document.getElementById('results-resin').style.display = 'block';
+    }
+
+    // ==========================================
+    // SKRYPTY KALKULATORA 2 (WYMIARY MAT / OVERLAP)
+    // ==========================================
+    
+    // Baza overlapów. 
+    // Poprawka wprowadzona: Biax 936 ustawiony sztywno na 45
+    const overlapData = {
+        "biax600":  { long: 30, trans: 30, name: "Biax 600" },
+        "biax936":  { long: 45, trans: 45, name: "Biax 936" },
+        "biax1200": { long: 60, trans: 60, name: "Biax 1200" },
+        "ud":       { long: 60, trans: 12, name: "UD 600" },
+        "triax":    { long: 90, trans: 30, name: "Triax 1200" }
+    };
+
+    function addLayerRow() {
+        const container = document.getElementById('layers-container');
+        const count = container.children.length + 1;
+        const row = document.createElement('div');
+        row.className = 'layer-row';
+        
+        row.innerHTML = `
+            <div class="layer-num">${count}.</div>
+            <select class="overlap-type">
+                <option value="biax600">Biax 600</option>
+                <option value="biax936">Biax 936</option>
+                <option value="biax1200">Biax 1200</option>
+                <option value="ud">UD 600</option>
+                <option value="triax">Triax 1200</option>
+            </select>
+            <button class="remove-btn" onclick="removeLayerRow(this)" title="Usuń warstwę">X</button>
+        `;
+        container.appendChild(row);
+        updateLayerNumbers();
+    }
+
+    function removeLayerRow(btn) {
+        const container = document.getElementById('layers-container');
+        if(container.children.length > 1) {
+            btn.parentElement.remove();
+            updateLayerNumbers();
+        } else {
+            alert("Musisz mieć przynajmniej jedną warstwę naprawczą.");
+        }
+    }
+
+    function updateLayerNumbers() {
+        const rows = document.querySelectorAll('.layer-row .layer-num');
+        rows.forEach((numDiv, index) => {
+            numDiv.innerText = (index + 1) + ".";
+        });
+    }
+
+    function calculateOverlaps() {
+        // Pobieranie wymiarów początkowych uszkodzenia
+        let currentLong = parseFloat(document.getElementById('dmg-long').value);
+        let currentTrans = parseFloat(document.getElementById('dmg-trans').value);
+
+        if(!currentLong || !currentTrans || currentLong <= 0 || currentTrans <= 0) {
+            alert("Wpisz prawidłowe wymiary uszkodzenia.");
+            return;
+        }
+
+        const rows = document.querySelectorAll('.layer-row');
+        const outputContainer = document.getElementById('overlap-output-list');
+        outputContainer.innerHTML = ''; // czyszczenie starych wyników
+
+        rows.forEach((row, index) => {
+            const selectVal = row.querySelector('.overlap-type').value;
+            const matInfo = overlapData[selectVal];
+
+            // Obliczanie: Poprzedni wymiar + (Zakładka x2 - bo dodajemy na KAŻDĄ krawędź góra-dół / lewo-prawo)
+            currentLong += (matInfo.long * 2);
+            currentTrans += (matInfo.trans * 2);
+
+            // Formatowanie (ucina puste zera po przecinku np 40.0 -> 40, ale zostawia 40.5)
+            let displayLong = parseFloat(currentLong.toFixed(1));
+            let displayTrans = parseFloat(currentTrans.toFixed(1));
+
+            // Generowanie wiersza HTML z wynikiem
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'ply-result';
+            resultDiv.innerHTML = `
+                <span>Warstwa ${index + 1} (${matInfo.name})</span>
+                <span><b>${displayLong}</b> x <b>${displayTrans}</b> mm</span>
+            `;
+            outputContainer.appendChild(resultDiv);
+        });
 
         // Odkrycie wyników
-        document.getElementById('results').style.display = 'block';
+        document.getElementById('results-overlap').style.display = 'block';
     }
 </script>
 
