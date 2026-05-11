@@ -143,13 +143,26 @@
             margin-bottom: 10px;
             color: #333;
         }
+
+        /* Nowa sekcja na podsumowanie żywicy z naprawy */
+        .repair-resin-box {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 2px dashed #bbb;
+        }
+        .repair-resin-box h3 {
+            margin-top: 0;
+            font-size: 1.1em;
+            color: var(--secondary-color);
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
 
-<!-- KALKULATOR 1: ŻYWICA -->
+<!-- KALKULATOR 1: ŻYWICA RĘCZNA -->
 <div class="calculator">
-    <h2>Kalkulator Żywicy</h2>
+    <h2>Kalkulator Żywicy (Dowolne wymiary z palca)</h2>
     <div class="headers"><div>Szer. (mm)</div><div>Dług. (mm)</div><div>Rodzaj maty</div><div></div></div>
     <div id="mats-container"></div>
     <button class="add-btn" onclick="addMatRow()">+ Dodaj matę do kubka</button>
@@ -169,9 +182,9 @@
     </div>
 </div>
 
-<!-- KALKULATOR 2: OVERLAP / WYMIARY MAT + RYSUNEK -->
+<!-- KALKULATOR 2: OVERLAP / WYMIARY MAT + RYSUNEK + ŻYWICA -->
 <div class="calculator">
-    <h2 class="calc-header-2">Kalkulator Wymiarów Mat (Naprawa)</h2>
+    <h2 class="calc-header-2">Kalkulator Naprawy (Layup + Żywica)</h2>
     
     <div class="damage-inputs">
         <div><label>Uszkodzenie Longitudinal (mm)</label><input type="number" id="dmg-long" placeholder="np. 40" min="1"></div>
@@ -181,12 +194,28 @@
     <div class="headers-overlap"><div>Nr</div><div>Rodzaj Maty</div><div></div></div>
     <div id="layers-container"></div>
     <button class="add-btn" onclick="addLayerRow()">+ Dodaj kolejną warstwę na stos</button>
-    <button class="calc-btn btn-overlap" onclick="calculateOverlaps()">Oblicz Wymiary i Generuj Plan</button>
 
-    <!-- Wyniki tekstowe -->
+    <div class="form-group" style="border-top: 1px solid #eee;">
+        <label>Margines strat żywicy (narzędzia) [%]</label>
+        <input type="number" id="waste-repair" value="10" min="0">
+    </div>
+
+    <button class="calc-btn btn-overlap" onclick="calculateOverlaps()">Oblicz Wymiary, Plan i Żywicę</button>
+
+    <!-- Wyniki tekstowe dla naprawy (wymiary + zapotrzebowanie na żywicę) -->
     <div class="results results-overlap" id="results-overlap" style="display: none;">
         <div style="font-size: 0.9em; margin-bottom: 15px; color: #555;">* Wymiary zawierają dodatek na overlap z <b>obu</b> stron uszkodzenia (+ overlap x2).</div>
+        
         <div id="overlap-output-list"></div>
+
+        <!-- Nowa sekcja kalkulacji żywicy wbudowana w moduł naprawy -->
+        <div class="repair-resin-box">
+            <h3>Potrzebna Żywica dla powyższych warstw:</h3>
+            <div class="result-item"><span>Całkowita waga szkła:</span><span id="rep-glass">0 g</span></div>
+            <div class="result-item"><span>Mieszanka (z doliczonymi stratami):</span><span id="rep-mix">0 g</span></div>
+            <div class="result-item bold"><span>Żywica (Baza):</span><span id="rep-epoxy" style="color: var(--primary-color);">0 g</span></div>
+            <div class="result-item bold" style="border-top: none; padding-top: 0; margin-top: 0;"><span>Utwardzacz:</span><span id="rep-hardener" style="color: var(--danger-color);">0 g</span></div>
+        </div>
     </div>
 
     <!-- Rysunek techniczny -->
@@ -200,7 +229,7 @@
     window.onload = function() { addMatRow(); addLayerRow(); };
 
     // ==========================================
-    // 1. ŻYWICA
+    // 1. ŻYWICA Z PALCA
     // ==========================================
     function addMatRow() {
         const container = document.getElementById('mats-container');
@@ -249,14 +278,16 @@
     }
 
     // ==========================================
-    // 2. OVERLAP I RYSUNEK TECHNICZNY
+    // 2. OVERLAP, RYSUNEK I ŻYWICA NAPRAWY
     // ==========================================
+    
+    // Dodałem klucz "weight" aby można było obliczyć zapotrzebowanie na żywicę dla każdej maty
     const overlapData = {
-        "biax600":  { long: 30, trans: 30, name: "Biax 600", color: "#28a745" }, 
-        "biax936":  { long: 45, trans: 45, name: "Biax 936", color: "#20c997" }, 
-        "biax1200": { long: 60, trans: 60, name: "Biax 1200", color: "#198754" },
-        "ud":       { long: 60, trans: 12, name: "UD 600", color: "#007BFF" },   
-        "triax":    { long: 90, trans: 30, name: "Triax 1200", color: "#6f42c1" }
+        "biax600":  { long: 30, trans: 30, name: "Biax 600", color: "#28a745", weight: 600 }, 
+        "biax936":  { long: 45, trans: 45, name: "Biax 936", color: "#20c997", weight: 936 }, 
+        "biax1200": { long: 60, trans: 60, name: "Biax 1200", color: "#198754", weight: 1200 },
+        "ud":       { long: 60, trans: 12, name: "UD 600", color: "#007BFF", weight: 600 },   
+        "triax":    { long: 90, trans: 30, name: "Triax 1200", color: "#6f42c1", weight: 1200 }
     };
 
     function addLayerRow() {
@@ -290,27 +321,45 @@
         let currentLong = dmgLong;
         let currentTrans = dmgTrans;
         let layerResults = []; 
+        let totalGlassWeightRepair = 0; // Zmienna do liczenia żywicy dla naprawy
 
         document.querySelectorAll('.layer-row').forEach((row, index) => {
             const selectVal = row.querySelector('.overlap-type').value;
             const matInfo = overlapData[selectVal];
 
+            // Nowe wymiary po uwzględnieniu overlapu z obu stron
             currentLong += (matInfo.long * 2);
             currentTrans += (matInfo.trans * 2);
 
             let dispLong = parseFloat(currentLong.toFixed(1));
             let dispTrans = parseFloat(currentTrans.toFixed(1));
 
+            // Obliczenia wagi do żywicy: pole w metrach kwadratowych * gramatura maty
+            let areaM2 = (dispLong / 1000) * (dispTrans / 1000);
+            totalGlassWeightRepair += (areaM2 * matInfo.weight);
+
+            // Zapis do tabeli do rysowania
             layerResults.push({ id: index + 1, name: matInfo.name, long: dispLong, trans: dispTrans, color: matInfo.color });
 
+            // Rysowanie wyników tekstowych (wymiary)
             const resultDiv = document.createElement('div'); resultDiv.className = 'ply-result';
             resultDiv.innerHTML = `<span>Warstwa ${index + 1} (${matInfo.name})</span><span><b>${dispLong}</b> x <b>${dispTrans}</b> mm</span>`;
             outputContainer.appendChild(resultDiv);
         });
 
+        // WYŚWIETLANIE ŻYWICY DLA NAPRAWY
+        const wasteRep = parseFloat(document.getElementById('waste-repair').value) || 0;
+        let mixRep = totalGlassWeightRepair * (45 / 55);
+        if(wasteRep > 0) mixRep = mixRep * (1 + (wasteRep / 100));
+
+        document.getElementById('rep-glass').innerText = totalGlassWeightRepair.toFixed(1) + ' g';
+        document.getElementById('rep-mix').innerText = mixRep.toFixed(1) + ' g';
+        document.getElementById('rep-epoxy').innerText = (mixRep * (100 / 126)).toFixed(1) + ' g';
+        document.getElementById('rep-hardener').innerText = (mixRep * (26 / 126)).toFixed(1) + ' g';
+
         document.getElementById('results-overlap').style.display = 'block';
         
-        // --- Generowanie Rysunku ---
+        // Generowanie Rysunku
         generateSVG(dmgLong, dmgTrans, layerResults);
     }
 
@@ -319,18 +368,18 @@
         const wrapper = document.getElementById('svg-wrapper');
 
         const maxLayer = layers[layers.length - 1];
-        const padding = 120; // margines na napisy w SVG (wystarczający na obrócone numery)
+        const padding = 120; // margines na napisy
         const viewBoxW = maxLayer.long + (padding * 2);
         const viewBoxH = maxLayer.trans + (padding * 2);
         const cx = viewBoxW / 2;
         const cy = viewBoxH / 2;
 
         const fSize = Math.max(viewBoxW * 0.02, 10); 
-        const dimFSize = fSize * 0.75; // Czcionka wymiarów trochę mniejsza, żeby się mieściła
+        const dimFSize = fSize * 0.75; 
 
         let svg = `<svg viewBox="0 0 ${viewBoxW} ${viewBoxH}" style="width: 100%; height: auto; background: #fafafa; border: 1px dashed #ccc;">`;
 
-        // Osie kierunkowe
+        // Osie
         svg += `
             <line x1="${cx}" y1="0" x2="${cx}" y2="${viewBoxH}" stroke="#ddd" stroke-width="2" stroke-dasharray="10,10"/>
             <line x1="0" y1="${cy}" x2="${viewBoxW}" y2="${cy}" stroke="#ddd" stroke-width="2" stroke-dasharray="10,10"/>
@@ -338,26 +387,23 @@
             <text x="${viewBoxW - padding + 10}" y="${cy - 10}" font-family="sans-serif" font-size="${fSize}" fill="#999">Longitudinal (0°)</text>
         `;
 
-        // Czerwony prostokąt - Uszkodzenie
+        // Uszkodzenie (Dziura)
         svg += `<rect x="${cx - dmgLong/2}" y="${cy - dmgTrans/2}" width="${dmgLong}" height="${dmgTrans}" fill="rgba(220, 53, 69, 0.2)" stroke="#dc3545" stroke-width="2" stroke-dasharray="5,5"/>`;
         svg += `<text x="${cx}" y="${cy}" font-family="sans-serif" font-size="${dimFSize}" fill="#dc3545" text-anchor="middle" dominant-baseline="middle" font-weight="bold">USZKODZENIE (${dmgLong}x${dmgTrans})</text>`;
 
-        // Rysowanie poszczególnych mat
+        // Rysowanie mat
         layers.forEach((layer) => {
             let x = cx - (layer.long / 2);
             let y = cy - (layer.trans / 2);
             
-            // Sam prostokąt maty
             svg += `<rect x="${x}" y="${y}" width="${layer.long}" height="${layer.trans}" fill="none" stroke="${layer.color}" stroke-width="${Math.max(viewBoxW*0.003, 2)}"/>`;
             
-            // Etykieta maty (Lewy Górny Róg) - z samej nazwy maty bez wymiarów
             svg += `
                 <text x="${x + (viewBoxW*0.01)}" y="${y - (viewBoxH*0.01)}" font-family="sans-serif" font-size="${fSize*0.8}" fill="${layer.color}" font-weight="bold">
                     ${layer.id}. ${layer.name}
                 </text>
             `;
 
-            // Wymiar Poziomy (Longitudinal) - pod dolną kreską
             let bottomY = cy + (layer.trans / 2) + (dimFSize * 1.2);
             svg += `
                 <text x="${cx}" y="${bottomY}" font-family="sans-serif" font-size="${dimFSize}" fill="${layer.color}" text-anchor="middle" font-weight="bold">
@@ -365,7 +411,6 @@
                 </text>
             `;
 
-            // Wymiar Pionowy (Transverse) - obok prawej kreski (Obrócony o 90 stopni)
             let rightX = cx + (layer.long / 2) + (dimFSize * 0.8);
             svg += `
                 <text x="${rightX}" y="${cy}" transform="rotate(-90 ${rightX} ${cy})" font-family="sans-serif" font-size="${dimFSize}" fill="${layer.color}" text-anchor="middle" dominant-baseline="middle" font-weight="bold">
