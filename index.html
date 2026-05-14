@@ -4,12 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kalkulatory Kompozytowe + Plan Layupu</title>
+    
+    <!-- Biblioteka do generowania PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
     <style>
         :root {
             --primary-color: #007BFF;
             --secondary-color: #17a2b8;
             --danger-color: #dc3545;
             --success-color: #28a745;
+            --warning-color: #ffc107;
             --bg-color: #f4f7f6;
             --card-bg: #ffffff;
             --text-color: #333;
@@ -30,7 +35,7 @@
             border-radius: 10px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             width: 100%;
-            max-width: 650px;
+            max-width: 700px;
         }
         h2 {
             text-align: center;
@@ -41,6 +46,7 @@
         }
         .calc-header-2 { color: var(--secondary-color); }
         
+        /* Tabela wprowadzania */
         .headers, .headers-overlap {
             display: grid;
             gap: 10px;
@@ -111,6 +117,7 @@
             cursor: pointer; margin-top: 10px; transition: 0.3s;
         }
         .calc-btn.btn-overlap { background-color: var(--secondary-color); }
+        .calc-btn.btn-pdf { background-color: var(--primary-color); margin-top: 20px; }
         .calc-btn:hover { filter: brightness(0.9); }
 
         .results {
@@ -127,13 +134,12 @@
         }
         .ply-result span:first-child { font-weight: bold; color: var(--secondary-color); }
 
-        /* Styl dla rysunku technicznego */
         .drawing-container {
             margin-top: 25px;
             background: #fff;
             border: 1px solid #ccc;
             border-radius: 5px;
-            padding: 10px;
+            padding: 15px;
             overflow: hidden;
             display: none;
         }
@@ -144,21 +150,138 @@
             color: #333;
         }
 
-        /* Nowa sekcja na podsumowanie żywicy z naprawy */
         .repair-resin-box {
             margin-top: 20px;
             padding-top: 15px;
             border-top: 2px dashed #bbb;
         }
-        .repair-resin-box h3 {
-            margin-top: 0;
-            font-size: 1.1em;
-            color: var(--secondary-color);
-            margin-bottom: 15px;
+        .repair-resin-box h3 { margin-top: 0; font-size: 1.1em; color: var(--secondary-color); margin-bottom: 15px; }
+
+        /* --- Style dla sekcji Danych Wejściowych --- */
+        .info-accordion-btn {
+            background-color: #e9ecef; color: #333; cursor: pointer; padding: 15px;
+            width: 100%; border: 1px solid #ccc; text-align: left; outline: none;
+            font-size: 1em; font-weight: bold; transition: 0.3s; border-radius: 5px;
+            margin-bottom: 5px; display: flex; justify-content: space-between;
         }
+        .info-accordion-btn:hover, .info-accordion-btn.active {
+            background-color: #d3d9df; border-left: 5px solid var(--primary-color);
+        }
+        .info-accordion-btn::after { content: '\002B'; font-size: 1.2em; }
+        .info-accordion-btn.active::after { content: '\2212'; }
+        
+        .info-panel {
+            padding: 15px; background-color: white; display: none; overflow: hidden;
+            border: 1px solid #ccc; border-top: none; border-radius: 0 0 5px 5px;
+            margin-top: -5px; margin-bottom: 15px; font-size: 0.9em;
+        }
+        
+        .info-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.85em;}
+        .info-table th, .info-table td { border: 1px solid #ddd; padding: 6px; text-align: center; }
+        .info-table th { background-color: #f4f7f6; }
+        
+        /* Kolory do tabeli warunków pogodowych */
+        .bg-red { background-color: #ff4d4d; color: white; font-weight: bold;}
+        .bg-yellow { background-color: #ffd966; color: black; }
+        .bg-green { background-color: #93c47d; color: black; }
+        .legend-box { display: inline-block; width: 15px; height: 15px; border: 1px solid #333; margin-right: 5px; vertical-align: middle;}
     </style>
 </head>
 <body>
+
+<!-- SEKCJA DANYCH WEJŚCIOWYCH (AKORDEONY) -->
+<div class="calculator" style="margin-bottom: 20px;">
+    <h2>Dane technologiczne i parametry</h2>
+    
+    <!-- OVERLAPY -->
+    <button class="info-accordion-btn">Overlapy Mat (Zakładki)</button>
+    <div class="info-panel">
+        <p>Zakładki dodawane na <b>każdą</b> krawędź uszkodzenia. Wymiar całkowity maty rośnie o <b>Zakładkę x2</b>.</p>
+        <table class="info-table">
+            <tr>
+                <th>Rodzaj Maty</th>
+                <th>Longitudinal (0°)</th>
+                <th>Transverse (90°)</th>
+            </tr>
+            <tr><td>Biax 600</td><td>30 mm</td><td>30 mm</td></tr>
+            <tr><td>Biax 936</td><td>45 mm</td><td>45 mm</td></tr>
+            <tr><td>Biax 1200</td><td>60 mm</td><td>20 mm</td></tr>
+            <tr><td>UD 600</td><td>60 mm</td><td>12 mm</td></tr>
+            <tr><td>UD 1200</td><td>120 mm</td><td>24 mm</td></tr>
+            <tr><td>Triax 1200</td><td>90 mm</td><td>30 mm</td></tr>
+            <tr><td>Triax 1500</td><td>125 mm</td><td>35 mm</td></tr>
+        </table>
+    </div>
+
+    <!-- SPECYFIKACJA ŻYWICY -->
+    <button class="info-accordion-btn">Specyfikacja Żywicy</button>
+    <div class="info-panel">
+        <p><b>System żywiczny:</b> Ampreg 30</p>
+        <ul>
+            <li><b>Stosunek Szkło : Żywica:</b> 55 : 45 (wagowo)</li>
+            <li><b>Stosunek Baza : Utwardzacz:</b> 100 : 26 (wagowo / ±5%)</li>
+        </ul>
+        <p><i>* Kalkulator pozwala na doliczenie % marginesu błędu na straty w narzędziach (pędzel, wałek, kubek).</i></p>
+    </div>
+
+    <!-- WARUNKI UTWARDZANIA -->
+    <button class="info-accordion-btn">Warunki Aplikacji i Utwardzania (Curing)</button>
+    <div class="info-panel">
+        
+        <p style="font-weight: bold; margin-bottom: 5px;">Tabela Czasów Utwardzania (Ampreg 30)</p>
+        <table class="info-table">
+            <tr>
+                <th>Rodzaj Utwardzacza</th>
+                <th>Temp. (°C)</th>
+                <th>Min. czas utwardzania (h)</th>
+            </tr>
+            <!-- SLOW -->
+            <tr><td rowspan="3"><b>Ampreg 30 Slow</b></td><td>50</td><td>10</td></tr>
+            <tr><td>60</td><td>4</td></tr>
+            <tr><td>70</td><td>2.5</td></tr>
+            <!-- STANDARD -->
+            <tr><td rowspan="3"><b>Ampreg 30 Standard</b></td><td>50</td><td>8</td></tr>
+            <tr><td>60</td><td>3</td></tr>
+            <tr><td>70</td><td>2</td></tr>
+            <!-- FAST -->
+            <tr><td rowspan="3"><b>Ampreg 30 Fast</b></td><td>50</td><td>6</td></tr>
+            <tr><td>60</td><td>2</td></tr>
+            <tr><td>70</td><td>1.5</td></tr>
+        </table>
+        <ul style="font-size: 0.85em; margin-top: 5px;">
+            <li>Poniżej 18°C powierzchnia musi być podgrzana.</li>
+            <li>Powyżej 30°C czas pracy będzie znacznie skrócony.</li>
+            <li>Powyżej 35°C naprawy laminatu nie są zalecane.</li>
+        </ul>
+
+        <p style="font-weight: bold; margin-top: 20px; margin-bottom: 5px;">Warunki Aplikacji (Temp. vs Wilgotność RH)</p>
+        <table class="info-table">
+            <tr>
+                <th rowspan="2" style="padding: 1px; ">Temp (°C)</th>
+                <th colspan="9">RH (%)</th>
+            </tr>
+            <tr>
+                <th>20</th><th>30</th><th>40</th><th>50</th><th>60</th><th>70</th><th>80</th><th>85</th><th>90</th>
+            </tr>
+            <tr><td>&lt;5</td> <td class="bg-red" colspan="9"></td></tr>
+            <tr><td>5</td>    <td class="bg-red" colspan="9"></td></tr>
+            <tr><td>10</td>   <td class="bg-yellow">F</td><td class="bg-yellow">F</td><td class="bg-yellow">F</td><td class="bg-yellow">F</td><td class="bg-yellow">F</td><td class="bg-yellow">F</td><td class="bg-yellow">F</td><td class="bg-yellow">F</td><td class="bg-red"></td></tr>
+            <tr><td>15</td>   <td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-red"></td></tr>
+            <tr><td>18</td>   <td class="bg-green"></td><td class="bg-green"></td><td class="bg-green"></td><td class="bg-green"></td><td class="bg-green"></td><td class="bg-green"></td><td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-red"></td></tr>
+            <tr><td>20</td>   <td class="bg-green"></td><td class="bg-green"></td><td class="bg-green"></td><td class="bg-green"></td><td class="bg-green"></td><td class="bg-green"></td><td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-red"></td></tr>
+            <tr><td>25</td>   <td class="bg-green"></td><td class="bg-green"></td><td class="bg-green"></td><td class="bg-green"></td><td class="bg-green"></td><td class="bg-green"></td><td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-red"></td></tr>
+            <tr><td>30</td>   <td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-red"></td></tr>
+            <tr><td>35</td>   <td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-red"></td><td class="bg-red"></td><td class="bg-red"></td></tr>
+            <tr><td>&gt;35</td><td class="bg-red" colspan="9"></td></tr>
+        </table>
+        <div style="font-size: 0.85em;">
+            <div><span class="legend-box bg-green"></span> Normal application window</div>
+            <div><span class="legend-box bg-yellow"></span> Use with caution</div>
+            <div><span class="legend-box bg-red"></span> Not recommended</div>
+            <div><b>F</b> = Fast hardener only</div>
+        </div>
+    </div>
+</div>
 
 <!-- KALKULATOR 1: ŻYWICA RĘCZNA -->
 <div class="calculator">
@@ -202,13 +325,10 @@
 
     <button class="calc-btn btn-overlap" onclick="calculateOverlaps()">Oblicz Wymiary, Plan i Żywicę</button>
 
-    <!-- Wyniki tekstowe dla naprawy (wymiary + zapotrzebowanie na żywicę) -->
     <div class="results results-overlap" id="results-overlap" style="display: none;">
         <div style="font-size: 0.9em; margin-bottom: 15px; color: #555;">* Wymiary zawierają dodatek na overlap z <b>obu</b> stron uszkodzenia (+ overlap x2).</div>
-        
         <div id="overlap-output-list"></div>
-
-        <!-- Nowa sekcja kalkulacji żywicy wbudowana w moduł naprawy -->
+        
         <div class="repair-resin-box">
             <h3>Potrzebna Żywica dla powyższych warstw:</h3>
             <div class="result-item"><span>Całkowita waga szkła:</span><span id="rep-glass">0 g</span></div>
@@ -218,15 +338,33 @@
         </div>
     </div>
 
-    <!-- Rysunek techniczny -->
+    <!-- Kontener na Rysunek (Ten obszar będzie eksportowany do PDF) -->
     <div class="drawing-container" id="drawing-container">
         <div class="drawing-title">Plan Układania Warstw (Layup Plan)</div>
         <div id="svg-wrapper"></div>
     </div>
+    
+    <!-- Przycisk PDF -->
+    <button id="pdf-btn" class="calc-btn btn-pdf" style="display: none;" onclick="downloadPDF()">Pobierz Rysunek jako PDF</button>
+
 </div>
 
 <script>
     window.onload = function() { addMatRow(); addLayerRow(); };
+
+    // --- Obsługa rozwijanych paneli (Akordeon) ---
+    const accordions = document.querySelectorAll('.info-accordion-btn');
+    accordions.forEach(acc => {
+        acc.addEventListener('click', function() {
+            this.classList.toggle('active');
+            const panel = this.nextElementSibling;
+            if (panel.style.display === 'block') {
+                panel.style.display = 'none';
+            } else {
+                panel.style.display = 'block';
+            }
+        });
+    });
 
     // ==========================================
     // 1. ŻYWICA Z PALCA
@@ -239,9 +377,14 @@
             <input type="number" class="mat-width" placeholder="Np. 200" min="1">
             <input type="number" class="mat-length" placeholder="Np. 400" min="1">
             <select class="mat-type" onchange="checkCustom(this)">
-                <option value="600">Biax 600</option><option value="936">Biax 936</option>
-                <option value="1200" selected>Biax 1200</option><option value="600">UD 600</option>
-                <option value="1200">Triax 1200</option><option value="custom">Inna...</option>
+                <option value="600">Biax 600</option>
+                <option value="936">Biax 936</option>
+                <option value="1200" selected>Biax 1200</option>
+                <option value="600">UD 600</option>
+                <option value="1200">UD 1200</option>
+                <option value="1200">Triax 1200</option>
+                <option value="1500">Triax 1500</option>
+                <option value="custom">Inna...</option>
             </select>
             <button class="remove-btn" onclick="removeMatRow(this)">X</button>`;
         container.appendChild(row);
@@ -280,14 +423,14 @@
     // ==========================================
     // 2. OVERLAP, RYSUNEK I ŻYWICA NAPRAWY
     // ==========================================
-    
-    // Dodałem klucz "weight" aby można było obliczyć zapotrzebowanie na żywicę dla każdej maty
     const overlapData = {
-        "biax600":  { long: 30, trans: 30, name: "Biax 600", color: "#28a745", weight: 600 }, 
-        "biax936":  { long: 45, trans: 45, name: "Biax 936", color: "#20c997", weight: 936 }, 
-        "biax1200": { long: 60, trans: 60, name: "Biax 1200", color: "#198754", weight: 1200 },
-        "ud":       { long: 60, trans: 12, name: "UD 600", color: "#007BFF", weight: 600 },   
-        "triax":    { long: 90, trans: 30, name: "Triax 1200", color: "#6f42c1", weight: 1200 }
+        "biax600":   { long: 30, trans: 30, name: "Biax 600", color: "#28a745", weight: 600 }, 
+        "biax936":   { long: 45, trans: 45, name: "Biax 936", color: "#20c997", weight: 936 }, 
+        "biax1200":  { long: 60, trans: 20, name: "Biax 1200", color: "#198754", weight: 1200 },
+        "ud600":     { long: 60, trans: 12, name: "UD 600", color: "#007BFF", weight: 600 },   
+        "ud1200":    { long: 120, trans: 24, name: "UD 1200", color: "#0056b3", weight: 1200 }, 
+        "triax1200": { long: 90, trans: 30, name: "Triax 1200", color: "#6f42c1", weight: 1200 },
+        "triax1500": { long: 125, trans: 35, name: "Triax 1500", color: "#4c2889", weight: 1500 } 
     };
 
     function addLayerRow() {
@@ -297,9 +440,13 @@
         row.innerHTML = `
             <div class="layer-num">${count}.</div>
             <select class="overlap-type">
-                <option value="biax600">Biax 600</option><option value="biax936">Biax 936</option>
-                <option value="biax1200">Biax 1200</option><option value="ud">UD 600</option>
-                <option value="triax">Triax 1200</option>
+                <option value="biax600">Biax 600</option>
+                <option value="biax936">Biax 936</option>
+                <option value="biax1200">Biax 1200</option>
+                <option value="ud600">UD 600</option>
+                <option value="ud1200">UD 1200</option>
+                <option value="triax1200">Triax 1200</option>
+                <option value="triax1500">Triax 1500</option>
             </select>
             <button class="remove-btn" onclick="removeLayerRow(this)">X</button>`;
         container.appendChild(row);
@@ -321,33 +468,28 @@
         let currentLong = dmgLong;
         let currentTrans = dmgTrans;
         let layerResults = []; 
-        let totalGlassWeightRepair = 0; // Zmienna do liczenia żywicy dla naprawy
+        let totalGlassWeightRepair = 0; 
 
         document.querySelectorAll('.layer-row').forEach((row, index) => {
             const selectVal = row.querySelector('.overlap-type').value;
             const matInfo = overlapData[selectVal];
 
-            // Nowe wymiary po uwzględnieniu overlapu z obu stron
             currentLong += (matInfo.long * 2);
             currentTrans += (matInfo.trans * 2);
 
             let dispLong = parseFloat(currentLong.toFixed(1));
             let dispTrans = parseFloat(currentTrans.toFixed(1));
 
-            // Obliczenia wagi do żywicy: pole w metrach kwadratowych * gramatura maty
             let areaM2 = (dispLong / 1000) * (dispTrans / 1000);
             totalGlassWeightRepair += (areaM2 * matInfo.weight);
 
-            // Zapis do tabeli do rysowania
             layerResults.push({ id: index + 1, name: matInfo.name, long: dispLong, trans: dispTrans, color: matInfo.color });
 
-            // Rysowanie wyników tekstowych (wymiary)
             const resultDiv = document.createElement('div'); resultDiv.className = 'ply-result';
             resultDiv.innerHTML = `<span>Warstwa ${index + 1} (${matInfo.name})</span><span><b>${dispLong}</b> x <b>${dispTrans}</b> mm</span>`;
             outputContainer.appendChild(resultDiv);
         });
 
-        // WYŚWIETLANIE ŻYWICY DLA NAPRAWY
         const wasteRep = parseFloat(document.getElementById('waste-repair').value) || 0;
         let mixRep = totalGlassWeightRepair * (45 / 55);
         if(wasteRep > 0) mixRep = mixRep * (1 + (wasteRep / 100));
@@ -358,8 +500,7 @@
         document.getElementById('rep-hardener').innerText = (mixRep * (26 / 126)).toFixed(1) + ' g';
 
         document.getElementById('results-overlap').style.display = 'block';
-        
-        // Generowanie Rysunku
+        document.getElementById('pdf-btn').style.display = 'block'; // Odkrywamy przycisk PDF
         generateSVG(dmgLong, dmgTrans, layerResults);
     }
 
@@ -368,7 +509,7 @@
         const wrapper = document.getElementById('svg-wrapper');
 
         const maxLayer = layers[layers.length - 1];
-        const padding = 120; // margines na napisy
+        const padding = 120;
         const viewBoxW = maxLayer.long + (padding * 2);
         const viewBoxH = maxLayer.trans + (padding * 2);
         const cx = viewBoxW / 2;
@@ -377,9 +518,8 @@
         const fSize = Math.max(viewBoxW * 0.02, 10); 
         const dimFSize = fSize * 0.75; 
 
-        let svg = `<svg viewBox="0 0 ${viewBoxW} ${viewBoxH}" style="width: 100%; height: auto; background: #fafafa; border: 1px dashed #ccc;">`;
+        let svg = `<svg viewBox="0 0 ${viewBoxW} ${viewBoxH}" style="width: 100%; height: auto; background: #ffffff; border: 1px dashed #ccc;">`;
 
-        // Osie
         svg += `
             <line x1="${cx}" y1="0" x2="${cx}" y2="${viewBoxH}" stroke="#ddd" stroke-width="2" stroke-dasharray="10,10"/>
             <line x1="0" y1="${cy}" x2="${viewBoxW}" y2="${cy}" stroke="#ddd" stroke-width="2" stroke-dasharray="10,10"/>
@@ -387,11 +527,9 @@
             <text x="${viewBoxW - padding + 10}" y="${cy - 10}" font-family="sans-serif" font-size="${fSize}" fill="#999">Longitudinal (0°)</text>
         `;
 
-        // Uszkodzenie (Dziura)
         svg += `<rect x="${cx - dmgLong/2}" y="${cy - dmgTrans/2}" width="${dmgLong}" height="${dmgTrans}" fill="rgba(220, 53, 69, 0.2)" stroke="#dc3545" stroke-width="2" stroke-dasharray="5,5"/>`;
         svg += `<text x="${cx}" y="${cy}" font-family="sans-serif" font-size="${dimFSize}" fill="#dc3545" text-anchor="middle" dominant-baseline="middle" font-weight="bold">USZKODZENIE (${dmgLong}x${dmgTrans})</text>`;
 
-        // Rysowanie mat
         layers.forEach((layer) => {
             let x = cx - (layer.long / 2);
             let y = cy - (layer.trans / 2);
@@ -421,6 +559,23 @@
 
         svg += `</svg>`;
         wrapper.innerHTML = svg;
+    }
+
+    // --- Funkcja do eksportu PDF ---
+    function downloadPDF() {
+        const element = document.getElementById('drawing-container');
+        
+        // Konfiguracja PDF
+        const opt = {
+            margin:       10,
+            filename:     'Layup_Plan_Naprawy.pdf',
+            image:        { type: 'jpeg', quality: 1.0 },
+            html2canvas:  { scale: 2, useCORS: true },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+        };
+
+        // Generowanie i zapis
+        html2pdf().set(opt).from(element).save();
     }
 </script>
 
