@@ -4,10 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kalkulatory Kompozytowe + Plan Layupu</title>
-    
-    <!-- Biblioteka do generowania PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
     <style>
         :root {
             --primary-color: #007BFF;
@@ -35,7 +31,7 @@
             border-radius: 10px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             width: 100%;
-            max-width: 700px;
+            max-width: 650px;
         }
         h2 {
             text-align: center;
@@ -46,7 +42,6 @@
         }
         .calc-header-2 { color: var(--secondary-color); }
         
-        /* Tabela wprowadzania */
         .headers, .headers-overlap {
             display: grid;
             gap: 10px;
@@ -139,7 +134,7 @@
             background: #fff;
             border: 1px solid #ccc;
             border-radius: 5px;
-            padding: 15px;
+            padding: 10px;
             overflow: hidden;
             display: none;
         }
@@ -155,36 +150,72 @@
             padding-top: 15px;
             border-top: 2px dashed #bbb;
         }
-        .repair-resin-box h3 { margin-top: 0; font-size: 1.1em; color: var(--secondary-color); margin-bottom: 15px; }
+        .repair-resin-box h3 {
+            margin-top: 0;
+            font-size: 1.1em;
+            color: var(--secondary-color);
+            margin-bottom: 15px;
+        }
 
         /* --- Style dla sekcji Danych Wejściowych --- */
         .info-accordion-btn {
-            background-color: #e9ecef; color: #333; cursor: pointer; padding: 15px;
-            width: 100%; border: 1px solid #ccc; text-align: left; outline: none;
-            font-size: 1em; font-weight: bold; transition: 0.3s; border-radius: 5px;
-            margin-bottom: 5px; display: flex; justify-content: space-between;
+            background-color: #e9ecef;
+            color: #333;
+            cursor: pointer;
+            padding: 15px;
+            width: 100%;
+            border: 1px solid #ccc;
+            text-align: left;
+            outline: none;
+            font-size: 1em;
+            font-weight: bold;
+            transition: 0.3s;
+            border-radius: 5px;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
         }
         .info-accordion-btn:hover, .info-accordion-btn.active {
-            background-color: #d3d9df; border-left: 5px solid var(--primary-color);
+            background-color: #d3d9df;
+            border-left: 5px solid var(--primary-color);
         }
-        .info-accordion-btn::after { content: '\002B'; font-size: 1.2em; }
-        .info-accordion-btn.active::after { content: '\2212'; }
-        
+        .info-accordion-btn::after {
+            content: '\002B';
+            font-size: 1.2em;
+        }
+        .info-accordion-btn.active::after {
+            content: '\2212';
+        }
         .info-panel {
-            padding: 15px; background-color: white; display: none; overflow: hidden;
-            border: 1px solid #ccc; border-top: none; border-radius: 0 0 5px 5px;
-            margin-top: -5px; margin-bottom: 15px; font-size: 0.9em;
+            padding: 0 15px;
+            background-color: white;
+            display: none;
+            overflow: hidden;
+            border: 1px solid #ccc;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+            margin-top: -5px;
+            margin-bottom: 15px;
+            font-size: 0.9em;
         }
-        
-        .info-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.85em;}
-        .info-table th, .info-table td { border: 1px solid #ddd; padding: 6px; text-align: center; }
+        .info-panel ul { padding-left: 20px; }
+        .info-panel li { margin-bottom: 5px; }
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        .info-table th, .info-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
         .info-table th { background-color: #f4f7f6; }
-        
-        /* Kolory do tabeli warunków pogodowych */
         .bg-red { background-color: #ff4d4d; color: white; font-weight: bold;}
         .bg-yellow { background-color: #ffd966; color: black; }
         .bg-green { background-color: #93c47d; color: black; }
         .legend-box { display: inline-block; width: 15px; height: 15px; border: 1px solid #333; margin-right: 5px; vertical-align: middle;}
+
     </style>
 </head>
 <body>
@@ -193,7 +224,6 @@
 <div class="calculator" style="margin-bottom: 20px;">
     <h2>Dane technologiczne i parametry</h2>
     
-    <!-- OVERLAPY -->
     <button class="info-accordion-btn">Overlapy Mat (Zakładki)</button>
     <div class="info-panel">
         <p>Zakładki dodawane na <b>każdą</b> krawędź uszkodzenia. Wymiar całkowity maty rośnie o <b>Zakładkę x2</b>.</p>
@@ -213,10 +243,9 @@
         </table>
     </div>
 
-    <!-- SPECYFIKACJA ŻYWICY -->
     <button class="info-accordion-btn">Specyfikacja Żywicy</button>
     <div class="info-panel">
-        <p><b>System żywiczny:</b> Ampreg 30</p>
+        <p><b>System żywiczny:</b> Ampreg 30 (Epoxy)</p>
         <ul>
             <li><b>Stosunek Szkło : Żywica:</b> 55 : 45 (wagowo)</li>
             <li><b>Stosunek Baza : Utwardzacz:</b> 100 : 26 (wagowo / ±5%)</li>
@@ -224,10 +253,8 @@
         <p><i>* Kalkulator pozwala na doliczenie % marginesu błędu na straty w narzędziach (pędzel, wałek, kubek).</i></p>
     </div>
 
-    <!-- WARUNKI UTWARDZANIA -->
-    <button class="info-accordion-btn">Warunki Aplikacji i Utwardzania (Curing)</button>
+    <button class="info-accordion-btn">Warunki Utwardzania (Curing)</button>
     <div class="info-panel">
-        
         <p style="font-weight: bold; margin-bottom: 5px;">Tabela Czasów Utwardzania (Ampreg 30)</p>
         <table class="info-table">
             <tr>
@@ -235,29 +262,21 @@
                 <th>Temp. (°C)</th>
                 <th>Min. czas utwardzania (h)</th>
             </tr>
-            <!-- SLOW -->
             <tr><td rowspan="3"><b>Ampreg 30 Slow</b></td><td>50</td><td>10</td></tr>
             <tr><td>60</td><td>4</td></tr>
             <tr><td>70</td><td>2.5</td></tr>
-            <!-- STANDARD -->
             <tr><td rowspan="3"><b>Ampreg 30 Standard</b></td><td>50</td><td>8</td></tr>
             <tr><td>60</td><td>3</td></tr>
             <tr><td>70</td><td>2</td></tr>
-            <!-- FAST -->
             <tr><td rowspan="3"><b>Ampreg 30 Fast</b></td><td>50</td><td>6</td></tr>
             <tr><td>60</td><td>2</td></tr>
             <tr><td>70</td><td>1.5</td></tr>
         </table>
-        <ul style="font-size: 0.85em; margin-top: 5px;">
-            <li>Poniżej 18°C powierzchnia musi być podgrzana.</li>
-            <li>Powyżej 30°C czas pracy będzie znacznie skrócony.</li>
-            <li>Powyżej 35°C naprawy laminatu nie są zalecane.</li>
-        </ul>
-
+        
         <p style="font-weight: bold; margin-top: 20px; margin-bottom: 5px;">Warunki Aplikacji (Temp. vs Wilgotność RH)</p>
-        <table class="info-table">
+        <table class="info-table" style="font-size: 0.85em;">
             <tr>
-                <th rowspan="2" style="padding: 1px; ">Temp (°C)</th>
+                <th rowspan="2" style="writing-mode: vertical-rl; transform: rotate(180deg);">Air Temp (°C)</th>
                 <th colspan="9">RH (%)</th>
             </tr>
             <tr>
@@ -270,11 +289,11 @@
             <tr><td>18</td>   <td class="bg-green"></td><td class="bg-green"></td><td class="bg-green"></td><td class="bg-green"></td><td class="bg-green"></td><td class="bg-green"></td><td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-red"></td></tr>
             <tr><td>20</td>   <td class="bg-green"></td><td class="bg-green"></td><td class="bg-green"></td><td class="bg-green"></td><td class="bg-green"></td><td class="bg-green"></td><td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-red"></td></tr>
             <tr><td>25</td>   <td class="bg-green"></td><td class="bg-green"></td><td class="bg-green"></td><td class="bg-green"></td><td class="bg-green"></td><td class="bg-green"></td><td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-red"></td></tr>
-            <tr><td>30</td>   <td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-red"></td></tr>
+            <tr><td>30</td>   <td class="bg-green"></td><td class="bg-green"></td><td class="bg-green"></td><td class="bg-green"></td><td class="bg-green"></td><td class="bg-green"></td><td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-red"></td></tr>
             <tr><td>35</td>   <td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-yellow"></td><td class="bg-red"></td><td class="bg-red"></td><td class="bg-red"></td></tr>
             <tr><td>&gt;35</td><td class="bg-red" colspan="9"></td></tr>
         </table>
-        <div style="font-size: 0.85em;">
+        <div style="font-size: 0.85em; margin-top: 10px;">
             <div><span class="legend-box bg-green"></span> Normal application window</div>
             <div><span class="legend-box bg-yellow"></span> Use with caution</div>
             <div><span class="legend-box bg-red"></span> Not recommended</div>
@@ -327,8 +346,9 @@
 
     <div class="results results-overlap" id="results-overlap" style="display: none;">
         <div style="font-size: 0.9em; margin-bottom: 15px; color: #555;">* Wymiary zawierają dodatek na overlap z <b>obu</b> stron uszkodzenia (+ overlap x2).</div>
-        <div id="overlap-output-list"></div>
         
+        <div id="overlap-output-list"></div>
+
         <div class="repair-resin-box">
             <h3>Potrzebna Żywica dla powyższych warstw:</h3>
             <div class="result-item"><span>Całkowita waga szkła:</span><span id="rep-glass">0 g</span></div>
@@ -338,14 +358,13 @@
         </div>
     </div>
 
-    <!-- Kontener na Rysunek (Ten obszar będzie eksportowany do PDF) -->
     <div class="drawing-container" id="drawing-container">
         <div class="drawing-title">Plan Układania Warstw (Layup Plan)</div>
         <div id="svg-wrapper"></div>
     </div>
-    
-    <!-- Przycisk PDF -->
-    <button id="pdf-btn" class="calc-btn btn-pdf" style="display: none;" onclick="downloadPDF()">Pobierz Rysunek jako PDF</button>
+
+    <!-- Przycisk do JPEG -->
+    <button id="img-btn" class="calc-btn btn-pdf" style="display: none;" onclick="downloadImage()">Pobierz Rysunek (JPEG)</button>
 
 </div>
 
@@ -423,6 +442,7 @@
     // ==========================================
     // 2. OVERLAP, RYSUNEK I ŻYWICA NAPRAWY
     // ==========================================
+    
     const overlapData = {
         "biax600":   { long: 30, trans: 30, name: "Biax 600", color: "#28a745", weight: 600 }, 
         "biax936":   { long: 45, trans: 45, name: "Biax 936", color: "#20c997", weight: 936 }, 
@@ -500,82 +520,119 @@
         document.getElementById('rep-hardener').innerText = (mixRep * (26 / 126)).toFixed(1) + ' g';
 
         document.getElementById('results-overlap').style.display = 'block';
-        document.getElementById('pdf-btn').style.display = 'block'; // Odkrywamy przycisk PDF
+        document.getElementById('img-btn').style.display = 'block';
+        
         generateSVG(dmgLong, dmgTrans, layerResults);
     }
 
-    function generateSVG(dmgLong, dmgTrans, layers) {
+    // --- POPRAWIONA I WYŚRODKOWANA FUNKCJA SVG ---
+  function generateSVG(dmgLong, dmgTrans, layers) {
         document.getElementById('drawing-container').style.display = 'block';
         const wrapper = document.getElementById('svg-wrapper');
 
         const maxLayer = layers[layers.length - 1];
-        const padding = 120;
-        const viewBoxW = maxLayer.long + (padding * 2);
-        const viewBoxH = maxLayer.trans + (padding * 2);
+        
+        // Margines płótna
+        const padding = 60; 
+        const viewBoxW = Number(maxLayer.long) + (padding * 2);
+        const viewBoxH = Number(maxLayer.trans) + (padding * 2);
         const cx = viewBoxW / 2;
         const cy = viewBoxH / 2;
 
-        const fSize = Math.max(viewBoxW * 0.02, 10); 
-        const dimFSize = fSize * 0.75; 
+        // Dynamiczna wielkość czcionki
+        const fSize = Math.max(viewBoxW * 0.018, 11); 
+        const dimFSize = fSize * 0.9; 
 
-        let svg = `<svg viewBox="0 0 ${viewBoxW} ${viewBoxH}" style="width: 100%; height: auto; background: #ffffff; border: 1px dashed #ccc;">`;
+        // MAGICZNY STYL CAD: Gruby biały obrys pod tekstem (efekt "wycięcia" linii)
+        const haloStyle = `paint-order="stroke fill" stroke="#ffffff" stroke-width="${fSize * 0.4}" stroke-linecap="round" stroke-linejoin="round"`;
 
+        let svg = `<svg id="my-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${viewBoxW} ${viewBoxH}" width="${viewBoxW}" height="${viewBoxH}" style="background-color: #ffffff;">`;
+
+        // Osie kierunkowe (0° i 90°)
         svg += `
-            <line x1="${cx}" y1="0" x2="${cx}" y2="${viewBoxH}" stroke="#ddd" stroke-width="2" stroke-dasharray="10,10"/>
-            <line x1="0" y1="${cy}" x2="${viewBoxW}" y2="${cy}" stroke="#ddd" stroke-width="2" stroke-dasharray="10,10"/>
-            <text x="${cx + 10}" y="${fSize + 10}" font-family="sans-serif" font-size="${fSize}" fill="#999">Transverse (90°)</text>
-            <text x="${viewBoxW - padding + 10}" y="${cy - 10}" font-family="sans-serif" font-size="${fSize}" fill="#999">Longitudinal (0°)</text>
+            <line x1="${cx}" y1="0" x2="${cx}" y2="${viewBoxH}" stroke="#e0e0e0" stroke-width="2" stroke-dasharray="8,8"/>
+            <line x1="0" y1="${cy}" x2="${viewBoxW}" y2="${cy}" stroke="#e0e0e0" stroke-width="2" stroke-dasharray="8,8"/>
+            
+            <text x="${cx}" y="20" font-family="sans-serif" font-size="${fSize}" fill="#999" text-anchor="middle" ${haloStyle}>90°</text>
+            <text x="${viewBoxW - 20}" y="${cy}" font-family="sans-serif" font-size="${fSize}" fill="#999" text-anchor="end" dominant-baseline="middle" ${haloStyle}>0°</text>
         `;
 
-        svg += `<rect x="${cx - dmgLong/2}" y="${cy - dmgTrans/2}" width="${dmgLong}" height="${dmgTrans}" fill="rgba(220, 53, 69, 0.2)" stroke="#dc3545" stroke-width="2" stroke-dasharray="5,5"/>`;
-        svg += `<text x="${cx}" y="${cy}" font-family="sans-serif" font-size="${dimFSize}" fill="#dc3545" text-anchor="middle" dominant-baseline="middle" font-weight="bold">USZKODZENIE (${dmgLong}x${dmgTrans})</text>`;
+        // Uszkodzenie na środku (Czerwona ramka + sam wymiar)
+        const dX = cx - dmgLong/2;
+        const dY = cy - dmgTrans/2;
+        svg += `<rect x="${dX}" y="${dY}" width="${dmgLong}" height="${dmgTrans}" fill="rgba(220, 53, 69, 0.15)" stroke="#dc3545" stroke-width="2" stroke-dasharray="4,4"/>`;
+        svg += `<text x="${cx}" y="${cy}" font-family="sans-serif" font-size="${dimFSize}" fill="#dc3545" text-anchor="middle" dominant-baseline="middle" font-weight="bold" ${haloStyle}>${dmgLong}x${dmgTrans}</text>`;
 
+        // Rysowanie poszczególnych mat
         layers.forEach((layer) => {
             let x = cx - (layer.long / 2);
             let y = cy - (layer.trans / 2);
             
-            svg += `<rect x="${x}" y="${y}" width="${layer.long}" height="${layer.trans}" fill="none" stroke="${layer.color}" stroke-width="${Math.max(viewBoxW*0.003, 2)}"/>`;
+            // Prostokąt
+            svg += `<rect x="${x}" y="${y}" width="${layer.long}" height="${layer.trans}" fill="none" stroke="${layer.color}" stroke-width="${Math.max(viewBoxW*0.002, 1.5)}"/>`;
             
+         // 1. Nazwa Maty (Lewy Górny róg, Obrócona o -90st, przylega wewnątrz do lewej linii)
+            // Pozycja obrotu X i Y musi być starannie przeliczona, aby środek obrotu był właściwy
+            let textX = x + fSize; // Odsunięcie lekko w prawo od lewej krawędzi
+            let textY = y + 8;     // Początek tekstu od górnego rogu w dół
             svg += `
-                <text x="${x + (viewBoxW*0.01)}" y="${y - (viewBoxH*0.01)}" font-family="sans-serif" font-size="${fSize*0.8}" fill="${layer.color}" font-weight="bold">
+                <text x="${textX}" y="${textY}" transform="rotate(-90 ${textX} ${textY})" font-family="sans-serif" font-size="${fSize*0.85}" fill="${layer.color}" font-weight="bold" text-anchor="end" ${haloStyle}>
                     ${layer.id}. ${layer.name}
                 </text>
             `;
 
-            let bottomY = cy + (layer.trans / 2) + (dimFSize * 1.2);
+            // Wymiar dolny (Umieszczony dokładnie NA dolnej krawędzi prostokąta z białym obrysem)
             svg += `
-                <text x="${cx}" y="${bottomY}" font-family="sans-serif" font-size="${dimFSize}" fill="${layer.color}" text-anchor="middle" font-weight="bold">
+                <text x="${cx}" y="${y + layer.trans}" font-family="sans-serif" font-size="${dimFSize}" fill="${layer.color}" text-anchor="middle" dominant-baseline="middle" font-weight="bold" ${haloStyle}>
                     ${layer.long}
                 </text>
             `;
 
-            let rightX = cx + (layer.long / 2) + (dimFSize * 0.8);
+            // Wymiar prawy (Umieszczony dokładnie NA prawej krawędzi prostokąta z białym obrysem)
             svg += `
-                <text x="${rightX}" y="${cy}" transform="rotate(-90 ${rightX} ${cy})" font-family="sans-serif" font-size="${dimFSize}" fill="${layer.color}" text-anchor="middle" dominant-baseline="middle" font-weight="bold">
+                <text x="${x + layer.long}" y="${cy}" transform="rotate(-90 ${x + layer.long} ${cy})" font-family="sans-serif" font-size="${dimFSize}" fill="${layer.color}" text-anchor="middle" dominant-baseline="middle" font-weight="bold" ${haloStyle}>
                     ${layer.trans}
                 </text>
             `;
         });
 
         svg += `</svg>`;
-        wrapper.innerHTML = svg;
+        
+        // Generowanie do obrazka
+        const svgDataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+        wrapper.innerHTML = `<img src="${svgDataUrl}" style="width: 100%; height: auto; border: 1px solid #eee; border-radius: 5px; display: block;" />`;
     }
 
-    // --- Funkcja do eksportu PDF ---
-    function downloadPDF() {
-        const element = document.getElementById('drawing-container');
+    // --- Pobieranie natywnego JPEG z podbiciem ostrości (Retina / Mobile) ---
+    function downloadImage() {
+        const wrapperImg = document.querySelector('#svg-wrapper img');
+        if (!wrapperImg) return;
         
-        // Konfiguracja PDF
-        const opt = {
-            margin:       10,
-            filename:     'Layup_Plan_Naprawy.pdf',
-            image:        { type: 'jpeg', quality: 1.0 },
-            html2canvas:  { scale: 2, useCORS: true },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
-        };
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            // Zabezpieczenie wymiarów (naturalWidth dla SVG działa najlepiej, w razie błędu fallback)
+            const w = img.naturalWidth || img.width;
+            const h = img.naturalHeight || img.height;
 
-        // Generowanie i zapis
-        html2pdf().set(opt).from(element).save();
+            canvas.width = w * 2;
+            canvas.height = h * 2;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            const jpegUrl = canvas.toDataURL('image/jpeg', 0.95);
+
+            const downloadLink = document.createElement('a');
+            downloadLink.href = jpegUrl;
+            downloadLink.download = 'Layup_Plan_Naprawy.jpg';
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+        };
+        img.src = wrapperImg.src;
     }
 </script>
 
